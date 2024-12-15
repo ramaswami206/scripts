@@ -1,53 +1,51 @@
 #!/bin/bash
 
-# Function to check command success
-check_command_success() {
-    if [ $? -ne 0 ]; then
-        echo "Command failed. Exiting."
-        exit 1
-    fi
-
-}
-
-# Update the package manager
+# Update the system
 sudo yum update -y
-check_command_success
 
-# Install EPEL repository (required for some packages)
-sudo amazon-linux-extras install epel -y
-check_command_success
-
-# Install Java (OpenJDK 11)
-sudo amazon-linux-extras install java-openjdk11 -y
-check_command_success
+# Install required dependencies
+sudo yum install -y wget curl unzip
 
 # Install Git
-sudo yum install git -y
-check_command_success
+sudo yum install -y git
 
-# Add Jenkins repository
-sudo wget -O /etc/yum.repos.d/jenkins.repo https://pkg.jenkins.io/redhat-stable/jenkins.repo --no-check-certificate
-check_command_success
+# Install Java (OpenJDK 11)
+sudo yum install -y java-11-openjdk-devel
+
+# Set JAVA_HOME environment variable
+echo 'export JAVA_HOME=/usr/lib/jvm/java-11-openjdk' | sudo tee -a /etc/profile.d/java.sh
+echo 'export PATH=$PATH:$JAVA_HOME/bin' | sudo tee -a /etc/profile.d/java.sh
+sudo chmod +x /etc/profile.d/java.sh
+source /etc/profile.d/java.sh
 
 # Import Jenkins repository key
 sudo rpm --import https://pkg.jenkins.io/redhat-stable/jenkins.io.key
-check_command_success
+
+# Add Jenkins repository
+sudo wget -O /etc/yum.repos.d/jenkins.repo https://pkg.jenkins.io/redhat-stable/jenkins.repo
 
 # Install Jenkins
-sudo yum install jenkins -y
-check_command_success
+sudo yum install -y jenkins
 
-# Start Jenkins service
+# Start and enable Jenkins service
 sudo systemctl start jenkins
-check_command_success
-
-# Enable Jenkins to start on boot
 sudo systemctl enable jenkins
-check_command_success
 
-# Check Jenkins status
-sudo systemctl status jenkins
+# Open Jenkins port (default 8080) on firewall
+sudo firewall-cmd --permanent --add-port=8080/tcp
+sudo firewall-cmd --reload
 
-echo "Jenkins installation and setup completed successfully."
-echo "Access Jenkins at http://<Your_Public_IP>:8080/"
-echo "Retrieve the initial admin password with: sudo cat /var/lib/jenkins/secrets/initialAdminPassword"
+# Install additional development tools
+sudo yum groupinstall -y "Development Tools"
+
+# Print initial admin password
+echo "Jenkins initial admin password:"
+sudo cat /var/lib/jenkins/secrets/initialAdminPassword
+
+# Optional: Install Docker (uncomment if needed)
+# sudo yum install -y docker
+# sudo service docker start
+# sudo usermod -a -G docker ec2-user
+# sudo usermod -a -G docker jenkins
+
+echo "Installation complete! Access Jenkins at http://your-server-ip:8080"
