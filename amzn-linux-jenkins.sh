@@ -1,51 +1,51 @@
 #!/bin/bash
 
-# Update the system
+# Update system and install essential packages
 sudo yum update -y
+sudo yum install -y wget curl unzip java-11-openjdk-devel
 
-# Install required dependencies
-sudo yum install -y wget curl unzip
-
-# Install Git
-sudo yum install -y git
-
-# Install Java (OpenJDK 11)
-sudo yum install -y java-11-openjdk-devel
-
-# Set JAVA_HOME environment variable
+# Set JAVA_HOME
 echo 'export JAVA_HOME=/usr/lib/jvm/java-11-openjdk' | sudo tee -a /etc/profile.d/java.sh
 echo 'export PATH=$PATH:$JAVA_HOME/bin' | sudo tee -a /etc/profile.d/java.sh
 sudo chmod +x /etc/profile.d/java.sh
 source /etc/profile.d/java.sh
 
-# Import Jenkins repository key
-sudo rpm --import https://pkg.jenkins.io/redhat-stable/jenkins.io.key
+# Remove any existing Jenkins repositories
+sudo rm -f /etc/yum.repos.d/jenkins.repo
 
-# Add Jenkins repository
-sudo wget -O /etc/yum.repos.d/jenkins.repo https://pkg.jenkins.io/redhat-stable/jenkins.repo
+# Import Jenkins repository key
+sudo rpm --import https://pkg.jenkins.io/redhat-stable/jenkins.io-2023.key
+
+# Add Jenkins repository (using latest stable version)
+sudo bash -c 'cat << EOF > /etc/yum.repos.d/jenkins.repo
+[jenkins-stable]
+name=Jenkins-stable
+baseurl=https://pkg.jenkins.io/redhat-stable
+gpgcheck=1
+gpgkey=https://pkg.jenkins.io/redhat-stable/jenkins.io-2023.key
+enabled=1
+EOF'
+
+# Clean yum cache
+sudo yum clean all
+sudo yum makecache
 
 # Install Jenkins
 sudo yum install -y jenkins
 
+# Configure network security for Jenkins
+# For Amazon Linux 2, use iptables instead of firewall-cmd
+sudo iptables -I INPUT -p tcp --dport 8080 -j ACCEPT
+sudo service iptables save
+
 # Start and enable Jenkins service
+sudo systemctl daemon-reload
 sudo systemctl start jenkins
 sudo systemctl enable jenkins
 
-# Open Jenkins port (default 8080) on firewall
-sudo firewall-cmd --permanent --add-port=8080/tcp
-sudo firewall-cmd --reload
-
-# Install additional development tools
-sudo yum groupinstall -y "Development Tools"
+# Verify Jenkins service status
+sudo systemctl status jenkins
 
 # Print initial admin password
-echo "Jenkins initial admin password:"
+echo "Jenkins Initial Admin Password:"
 sudo cat /var/lib/jenkins/secrets/initialAdminPassword
-
-# Optional: Install Docker (uncomment if needed)
-# sudo yum install -y docker
-# sudo service docker start
-# sudo usermod -a -G docker ec2-user
-# sudo usermod -a -G docker jenkins
-
-echo "Installation complete! Access Jenkins at http://your-server-ip:8080"
