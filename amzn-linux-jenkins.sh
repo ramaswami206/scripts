@@ -1,22 +1,21 @@
 #!/bin/bash
 
-# Update system and install essential packages
-sudo yum update -y
-sudo yum install -y wget curl unzip java-11-openjdk-devel
+# Update system
+sudo dnf update -y
 
-# Set JAVA_HOME
-echo 'export JAVA_HOME=/usr/lib/jvm/java-11-openjdk' | sudo tee -a /etc/profile.d/java.sh
+# Install Java 11
+sudo dnf install -y java-11-amazon-corretto-devel
+
+# Set JAVA_HOME for Corretto Java 11
+echo 'export JAVA_HOME=/usr/lib/jvm/java-11-amazon-corretto' | sudo tee -a /etc/profile.d/java.sh
 echo 'export PATH=$PATH:$JAVA_HOME/bin' | sudo tee -a /etc/profile.d/java.sh
 sudo chmod +x /etc/profile.d/java.sh
 source /etc/profile.d/java.sh
 
-# Remove any existing Jenkins repositories
-sudo rm -f /etc/yum.repos.d/jenkins.repo
-
 # Import Jenkins repository key
 sudo rpm --import https://pkg.jenkins.io/redhat-stable/jenkins.io-2023.key
 
-# Add Jenkins repository (using latest stable version)
+# Add Jenkins repository
 sudo bash -c 'cat << EOF > /etc/yum.repos.d/jenkins.repo
 [jenkins-stable]
 name=Jenkins-stable
@@ -26,17 +25,16 @@ gpgkey=https://pkg.jenkins.io/redhat-stable/jenkins.io-2023.key
 enabled=1
 EOF'
 
-# Clean yum cache
-sudo yum clean all
-sudo yum makecache
+# Clean and update package cache
+sudo dnf clean all
+sudo dnf makecache
 
 # Install Jenkins
-sudo yum install -y jenkins
+sudo dnf install -y jenkins
 
 # Configure network security for Jenkins
-# For Amazon Linux 2, use iptables instead of firewall-cmd
-sudo iptables -I INPUT -p tcp --dport 8080 -j ACCEPT
-sudo service iptables save
+sudo firewall-offline-cmd --add-port=8080/tcp
+sudo systemctl restart firewalld
 
 # Start and enable Jenkins service
 sudo systemctl daemon-reload
