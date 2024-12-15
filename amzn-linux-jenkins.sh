@@ -1,49 +1,79 @@
 #!/bin/bash
 
-# Update system
-sudo dnf update -y
+# Ensure script is run with sudo
+if [[ $EUID -ne 0 ]]; then
+   echo "This script must be run as root" 
+   exit 1
+fi
 
-# Install Java 11
-sudo dnf install -y java-11-amazon-corretto-devel
+# Update system packages
+dnf update -y
 
-# Set JAVA_HOME for Corretto Java 11
-echo 'export JAVA_HOME=/usr/lib/jvm/java-11-amazon-corretto' | sudo tee -a /etc/profile.d/java.sh
-echo 'export PATH=$PATH:$JAVA_HOME/bin' | sudo tee -a /etc/profile.d/java.sh
-sudo chmod +x /etc/profile.d/java.sh
+# Install Java 11 Corretto
+dnf install -y java-11-amazon-corretto-devel
+
+# Set JAVA_HOME
+mkdir -p /etc/profile.d
+cat << EOF > /etc/profile.d/java.sh
+export JAVA_HOME=/usr/lib/jvm/java-11-amazon-corretto
+export PATH=$PATH:$JAVA_HOME/bin
+EOF
+chmod +x /etc/profile.d/java.sh
 source /etc/profile.d/java.sh
 
-# Import Jenkins repository key
-sudo rpm --import https://pkg.jenkins.io/redhat-stable/jenkins.io-2023.key
+# Verify Java installation
+java -version
 
-# Add Jenkins repository
-sudo bash -c 'cat << EOF > /etc/yum.repos.d/jenkins.repo
+# Install wget and add repositories
+dnf install -y wget
+
+# Import Jenkins repository key
+rpm --import https://pkg.jenkins.io/redhat-stable/jenkins.io-2023.key
+
+# Create Jenkins repository file
+cat << EOF > /etc/yum.repos.d/jenkins.repo
 [jenkins-stable]
-name=Jenkins-stable
+name=Jenkins Stable
 baseurl=https://pkg.jenkins.io/redhat-stable
 gpgcheck=1
 gpgkey=https://pkg.jenkins.io/redhat-stable/jenkins.io-2023.key
 enabled=1
-EOF'
+EOF
 
 # Clean and update package cache
-sudo dnf clean all
-sudo dnf makecache
+dnf clean all
+dnf makecache
 
 # Install Jenkins
-sudo dnf install -y jenkins
+dnf install -y jenkins
 
 # Configure network security for Jenkins
-sudo firewall-offline-cmd --add-port=8080/tcp
-sudo systemctl restart firewalld
+# Amazon Linux 2023 uses nftables, so we'll use that
+nft add rule inet filter input tcp dport 8080 accept
 
 # Start and enable Jenkins service
-sudo systemctl daemon-reload
-sudo systemctl start jenkins
-sudo systemctl enable jenkins
+systemctl daemon-reload
+systemctl start jenkins
+systemctl enable jenkins
 
-# Verify Jenkins service status
-sudo systemctl status jenkins
+# Check Jenkins service status
+systemctl status jenkins
 
-# Print initial admin password
-echo "Jenkins Initial Admin Password:"
-sudo cat /var/lib/jenkins/secrets/initialAdminPassword
+# Attempt to find initial admin password
+JENKINS_PASS=$(find /var/lib/jenkins -name "initialAdminPassword" -exec cat {} \; 2>/dev/null)
+
+# Output results
+echo "Jenkins Installation Complete!"
+if [ -n "$JENKINS_PASS" ]; then
+    echo "Initial Admin Password: $JENKINS_PASS"
+else
+    echo "Could not automatically retrieve initial admin password."
+    echo "Please check /var/lib/jenkins/secrets/initialAdminPassword manually."
+fi
+
+# Additional troubleshooting information
+echo "Java Version:"
+java -version
+
+echo "Jenkins Service Status:"
+systemctl status jenkins
