@@ -10,31 +10,39 @@ sudo amazon-linux-extras install epel -y
 
 # Install Java (OpenJDK 11)
 echo "Installing Java (OpenJDK 11)..."
-sudo yum install java-1.8.0-openjdk-devel -y
+sudo yum install java-11-openjdk-devel -y
 
 # Add Jenkins repository
 echo "Adding Jenkins repository..."
-sudo wget -O /etc/yum.repos.d/jenkins.repo https://pkg.jenkins.io/redhat/jenkins.repo
+sudo wget -O /etc/yum.repos.d/jenkins.repo https://pkg.jenkins.io/redhat-stable/jenkins.repo
 
 # Import the Jenkins GPG key
 echo "Importing Jenkins GPG key..."
-sudo rpm --import https://pkg.jenkins.io/redhat/jenkins.io.key
+sudo rpm --import https://pkg.jenkins.io/redhat-stable/jenkins.io.key
+
+# Clean up any cached packages to avoid GPG check issues
+echo "Cleaning up cached packages..."
+sudo yum clean all
 
 # Install Jenkins
 echo "Installing Jenkins..."
-sudo yum install jenkins -y
+if ! sudo yum install jenkins -y; then
+    echo "Error: Failed to install Jenkins. Please check the repository and GPG key."
+    exit 1
+fi
 
 # Check if the Jenkins service file exists
-if [ -f /usr/lib/systemd/system/jenkins.service ]; then
-    echo "Jenkins service file found."
-else
+if [ ! -f /usr/lib/systemd/system/jenkins.service ]; then
     echo "Error: Jenkins service file not found. Please check the installation."
     exit 1
 fi
 
 # Start the Jenkins service
 echo "Starting Jenkins service..."
-sudo systemctl start jenkins
+if ! sudo systemctl start jenkins; then
+    echo "Error: Failed to start Jenkins service."
+    exit 1
+fi
 
 # Enable Jenkins to start on boot
 echo "Enabling Jenkins to start on boot..."
