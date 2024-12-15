@@ -8,9 +8,9 @@ sudo yum update -y
 echo "Installing EPEL repository..."
 sudo amazon-linux-extras install epel -y
 
-# Install Java (OpenJDK 11)
+# Install Java (OpenJDK 11 or Amazon Corretto)
 echo "Installing Java (OpenJDK 11)..."
-sudo yum install java-11-openjdk-devel -y
+sudo yum install java-11-amazon-corretto -y
 
 # Add Jenkins repository
 echo "Adding Jenkins repository..."
@@ -24,9 +24,9 @@ sudo rpm --import https://pkg.jenkins.io/redhat-stable/jenkins.io.key
 echo "Cleaning up cached packages..."
 sudo yum clean all
 
-# Install Jenkins
+# Install Jenkins using dnf to avoid GPG issues
 echo "Installing Jenkins..."
-if ! sudo yum install jenkins -y; then
+if ! sudo dnf install jenkins -y; then
     echo "Error: Failed to install Jenkins. Please check the repository and GPG key."
     exit 1
 fi
