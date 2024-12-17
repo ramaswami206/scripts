@@ -38,3 +38,16 @@ sudo yum -y install terraform
 # Verify Terraform installation
 echo "Verifying Terraform installation..."
 terraform --version
+
+# Install AWS CLI
+echo "Installing AWS CLI..."
+sudo yum install -y unzip
+curl "https://awscli.amazonaws.com/awscli-exe-linux-x86_64.zip" -o "awscliv2.zip"
+unzip awscliv2.zip
+sudo ./aws/install
+
+# Verify AWS CLI installation
+echo "Verifying AWS CLI installation..."
+aws --version
+
+echo "Installation Complete: Docker, Jenkins, Terraform, and AWS CLI are ready!"
