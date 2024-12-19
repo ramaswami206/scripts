@@ -1,6 +1,6 @@
 # Configure the AWS Provider
 provider "aws" {
-  region = "us-west-2" # Replace with your desired region
+  region = "us-east-1" # Replace with your desired region
 }
 
 # Create a security group that allows all incoming and outgoing traffic
