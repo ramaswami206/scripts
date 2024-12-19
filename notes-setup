@@ -1,4 +1,4 @@
-inbound rules add all 
+inbound rules add all in security group
 
 check for the code /var/jenkins_home/secrets/initialAdminPassword
 
