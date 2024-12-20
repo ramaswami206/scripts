@@ -26,7 +26,7 @@ resource "aws_security_group" "example" {
 # Create 3 EC2 instances
 resource "aws_instance" "example" {
   count         = 3
-  ami           = "ami-0c94855ba95c71c8" # Replace with your desired AMI
+  ami           = "ami-01816d07b1128cd2d" # Replace with your desired AMI
   instance_type = "t2.medium"
   vpc_security_group_ids = [aws_security_group.example.id]
   root_block_device {
