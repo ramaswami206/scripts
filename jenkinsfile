@@ -1,1 +1,45 @@
-test
+pipeline {
+    agent any
+
+    stages {
+        stage('Terraform Init') {
+            steps {
+                script {
+                    // Initialize Terraform
+                    sh 'terraform init'
+                }
+            }
+        }
+
+        stage('Terraform Validate') {
+            steps {
+                script {
+                    // Validate the Terraform configuration
+                    sh 'terraform validate'
+                }
+            }
+        }
+
+        stage('Terraform Apply') {
+            steps {
+                input 'Do you want to apply the changes?'  // Wait for user confirmation
+                script {
+                    // Apply the Terraform configuration
+                    sh 'terraform apply -auto-approve'
+                }
+            }
+        }
+    }
+
+    post {
+        always {
+            echo 'Terraform execution is complete.'
+        }
+        success {
+            echo 'Terraform apply was successful.'
+        }
+        failure {
+            echo 'Terraform apply failed.'
+        }
+    }
+}
