@@ -97,17 +97,14 @@ resource "aws_instance" "my_instances" {
     # Run the Docker image
     echo "Running the pulled Docker image..."
     docker run -d -p 8080:8080 -p 50000:50000 -v jenkins-data:/var/jenkins_home $DOCKER_USERNAME/$REPO_NAME:$IMAGE_TAG
-  EOF
 
-  tags = {
-    Name = "MyInstance-${count.index + 1}"
-  }
-}
-
-output "instance_ids" {
-  value = aws_instance.my_instances[*].id
-}
-
-output "public_ips" {
-  value = aws_instance.my_instances[*].public_ip
-}
+    # Unlock Jenkins
+    echo "Unlocking Jenkins..."
+    docker exec -it $(docker ps -q -f ancestor=$DOCKER_USERNAME/$REPO_NAME) bash -c "echo 'jenkins' | /usr/local/bin/jenkins-cli login --username admin --password admin"
+    docker exec -it $(docker ps -q -f ancestor=$DOCKER_USERNAME/$REPO_NAME) bash -c "/usr/local/bin/jenkins-cli install-plugin workflow-aggregator"
+    docker exec -it $(docker ps -q -f ancestor=$DOCKER_USERNAME/$REPO_NAME) bash -c "/usr/local/bin/jenkins-cli install-plugin git"
+    docker exec -it $(docker ps -q -f ancestor=$DOCKER_USERNAME/$REPO_NAME) bash -c "/usr/local/bin/jenkins-cli install-plugin docker-plugin"
+    docker exec -it $(docker ps -q -f ancestor=$DOCKER_USERNAME/$REPO_NAME) bash -c "/usr/local/bin/jenkins-cli install-plugin kubernetes-plugin"
+    docker exec -it $(docker ps -q -f ancestor=$DOCKER_USERNAME/$REPO_NAME) bash -c "/usr/local/bin/jenkins-cli install-plugin configuration-as-code"
+    docker exec -it $(docker ps -q -f ancestor=$DOCKER_USERNAME/$REPO_NAME) bash -c "/usr/local/bin/jenkins-cli install-plugin job-dsl"
+    docker exec -it $(docker ps -q -f ancestor=$DOCKER_USERNAME/$REPO
