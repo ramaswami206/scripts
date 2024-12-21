@@ -107,4 +107,22 @@ resource "aws_instance" "my_instances" {
     docker exec -it $(docker ps -q -f ancestor=$DOCKER_USERNAME/$REPO_NAME) bash -c "/usr/local/bin/jenkins-cli install-plugin kubernetes-plugin"
     docker exec -it $(docker ps -q -f ancestor=$DOCKER_USERNAME/$REPO_NAME) bash -c "/usr/local/bin/jenkins-cli install-plugin configuration-as-code"
     docker exec -it $(docker ps -q -f ancestor=$DOCKER_USERNAME/$REPO_NAME) bash -c "/usr/local/bin/jenkins-cli install-plugin job-dsl"
-    docker exec -it $(docker ps -q -f ancestor=$DOCKER_USERNAME/$REPO
+    docker exec -it $(docker ps -q -f ancestor=$DOCKER_USERNAME/$REPO_NAME) bash -c "/usr/local/bin/jenkins-cli install-plugin job-dsl"
+
+    # Configure Jenkins
+    echo "Configuring Jenkins..."
+    docker exec -it $(docker ps -q -f ancestor=$DOCKER_USERNAME/$REPO_NAME) bash -c "/usr/local/bin/jenkins-cli configure-jenkins"
+  EOF
+
+  tags = {
+    Name = "MyInstance-${count.index + 1}"
+  }
+}
+
+output "instance_ids" {
+  value = aws_instance.my_instances[*].id
+}
+
+output "public_ips" {
+  value = aws_instance.my_instances[*].public_ip
+}
