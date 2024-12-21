@@ -22,6 +22,7 @@ resource "aws_security_group" "allow_all" {
 }
 
 resource "aws_instance" "example" {
+  count         = 4 # Create 4 instances
   ami           = "ami-01816d07b1128cd2d"
   instance_type = "t2.medium"
 
@@ -32,6 +33,6 @@ resource "aws_instance" "example" {
   security_groups = [aws_security_group.allow_all.name]
 
   tags = {
-    Name = "example-instance"
+    Name = "example-instance-${count.index + 1}"
   }
 }
